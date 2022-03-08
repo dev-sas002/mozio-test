@@ -104,6 +104,27 @@ Execution Time: 15.928 ms
 removed 100003 generated rows
 ```
 
+### Re-run, 2026-09-27
+
+The same command was run again on the same machine. Summarised rather than pasted
+in full, because the plans are identical in shape to the ones above — the same
+`Index Cond: (area_polygon ~ ...)` with `st_contains` as the refining `Filter`:
+
+| | 2026-09-23 | 2026-09-27 |
+| --- | --- | --- |
+| Execution time, with the index | 0.028 ms | 0.018 ms |
+| Execution time, index scans off | 15.928 ms | 20.282 ms |
+| Shared buffers, with / without | 11 / 2,134 | 9 / 2,133 |
+| End-to-end median over 25 runs | 0.56 ms | 0.49 ms |
+| GiST index size | 5472 kB | 11 MB |
+
+So the multiple came out nearer 1,100x than 570x. Both runs are real and neither
+number is the "true" one: the ratio depends on cache state, on how many parallel
+workers the planner launches for the sequential scan, and on table bloat — the
+second run's index is twice the size because the table still carried dead tuples
+from the first. The claims worth making are the shape of the plan and the order of
+magnitude, not the exact factor.
+
 ## Reading the plan
 
 * `Index Cond: (area_polygon ~ '...'::geometry)` is the important line. PostGIS
